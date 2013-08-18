@@ -56,8 +56,8 @@ def needleman_wunsch(sequence_a, sequence_b, score_matrix):
         for j in range(1, len(sequence_b)):
             a=sequence_a[i]
             b=sequence_b[j]
-            match = score_matrix[(a, b)] if (a, b) in score_matrix else score_matrix[(b, a)]
-            match = alignment_matrix[i-1, j-1] + match
+            score = score_matrix[(a, b)] if (a, b) in score_matrix else score_matrix[(b, a)]
+            match = alignment_matrix[i-1, j-1] + score
             delete = alignment_matrix[i-1, j] + gap_penalty
             insert = alignment_matrix[i, j-1] + gap_penalty
             best_score = max(match, delete, insert)
@@ -90,7 +90,6 @@ def recurse_path(path_matrix,
                  parent):
     paths = path_matrix[x, y]
     paths = int(paths) if not numpy.isnan(paths) else 0
-    print("Recursing %s, %s => %s" % (x,y, paths))
     if paths & MATCH_PATH:
         node = create_path_node()
         node['val-a'] = sequence_a[x-1]
@@ -114,7 +113,7 @@ def recurse_path(path_matrix,
             recurse_path(path_matrix, sequence_a, sequence_b, x-1, y, node)
     return parent
 
-#prints the solution found as a tree with al possible paths
+#prints the solution found as a tree with all possible paths
 def print_path_tree(t, prefix, operation, name):
     total_nodes = (1 if t['match'] else 0) + (1 if t['insert'] else 0) + (1 if t['delete'] else 0)
     def select_prefix(index):
