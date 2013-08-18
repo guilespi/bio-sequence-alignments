@@ -37,20 +37,42 @@ MATCH_PATH=2
 INSERT_PATH=4
 DELETE_PATH=8
 
+LEFT = 0
+UP = 1
+def gap_cost(matrix, x, y, direction, opening_cost, delta_cost):
+    cost = 0
+    while not numpy.isnan(matrix[x, y]):
+        cost += delta_cost
+        if direction == UP:
+            x -= 1
+        else:
+            y -= 1
+    return cost + opening_cost
+
 #Needleman wunsch for two sequences a and b
 def needleman_wunsch(sequence_a, sequence_b, score_matrix):
     gap_penalty = -3
+    gap_delta_penalty = -1
     sequence_a = "0" + sequence_a
     sequence_b = "0" + sequence_b
     alignment_matrix = numpy.empty((len(sequence_a), len(sequence_b), ))
     path_matrix = numpy.empty((len(sequence_a), len(sequence_b), ))
+    affine_x_matrix = numpy.empty((len(sequence_a), len(sequence_b), ))
+    affine_y_matrix = numpy.empty((len(sequence_a), len(sequence_b), ))
+    affine_x_matrix[:] = numpy.NAN
+    affine_y_matrix[:]= numpy.NAN
     alignment_matrix[:] = numpy.NAN
     path_matrix[:] = numpy.NAN
 
-    for i in range(len(sequence_a)):
-        alignment_matrix[i, 0] = gap_penalty * i
-    for j in range(len(sequence_b)):
-        alignment_matrix[0, j] = gap_penalty * j
+    alignment_matrix[0, 0] = 0
+    for i in range(1, len(sequence_a)):
+        cost = gap_cost(affine_x_matrix, i - 1, 0, UP, gap_penalty, gap_delta_penalty)
+        alignment_matrix[i, 0] = cost
+        affine_x_matrix[i, 0] = cost
+    for j in range(1, len(sequence_b)):
+        cost = gap_cost(affine_y_matrix, 0, j - 1, LEFT, gap_penalty, gap_delta_penalty)
+        alignment_matrix[0, j] = cost
+        affine_y_matrix[0, j] = cost
 
     for i in range(1, len(sequence_a)):
         for j in range(1, len(sequence_b)):
@@ -58,20 +80,26 @@ def needleman_wunsch(sequence_a, sequence_b, score_matrix):
             b=sequence_b[j]
             score = score_matrix[(a, b)] if (a, b) in score_matrix else score_matrix[(b, a)]
             match = alignment_matrix[i-1, j-1] + score
-            delete = alignment_matrix[i-1, j] + gap_penalty
-            insert = alignment_matrix[i, j-1] + gap_penalty
+            #delete = alignment_matrix[i-1, j] + gap_penalty
+            delete = gap_cost(affine_x_matrix, i-1, j, UP, gap_penalty, gap_delta_penalty)
+            #insert = alignment_matrix[i, j-1] + gap_penalty
+            insert = gap_cost(affine_y_matrix, i, j-1, LEFT, gap_penalty, gap_delta_penalty)
             best_score = max(match, delete, insert)
             path = 0
             if best_score == match:
                 path += MATCH_PATH
             if best_score == delete:
                 path += DELETE_PATH
+                affine_x_matrix[i, j] = best_score 
             if best_score == insert:
                 path += INSERT_PATH
+                affine_y_matrix[i, j] = best_score
             alignment_matrix[i, j] = best_score
             path_matrix[i, j] = path
     return {'alignments' : alignment_matrix,
-            'paths' : path_matrix}
+            'paths' : path_matrix,
+            'y_gaps' : affine_y_matrix,
+            'x_gaps' : affine_x_matrix}
 
 #Create a new node for the traverse tree
 def create_path_node():
@@ -143,6 +171,11 @@ def main():
     print result['alignments']
     print "\nPaths Matrix:"
     print result['paths']
+    print "\nHorizontal Gaps:"
+    print result['y_gaps']
+    print "\nVertical Gaps:"
+    print result['x_gaps']
+
     #build result tree
     x = len(sequence_a)
     y = len(sequence_b)
