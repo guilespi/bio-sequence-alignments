@@ -39,15 +39,20 @@ DELETE_PATH=8
 
 LEFT = 0
 UP = 1
-def gap_cost(matrix, x, y, direction, opening_cost, delta_cost):
+def gap_cost(cost_matrix, matrix, x, y, direction, opening_cost, delta_cost):
     cost = 0
-    while not numpy.isnan(matrix[x, y]):
+    ox = x
+    oy = y
+    while not numpy.isnan(matrix[ox, oy]):
         cost += delta_cost
         if direction == UP:
-            x -= 1
+            ox -= 1
         else:
-            y -= 1
-    return cost + opening_cost
+            oy -= 1
+    if cost == 0:
+        return cost_matrix[x, y] + opening_cost
+    else:
+        return cost + opening_cost
 
 #Needleman wunsch for two sequences a and b
 def needleman_wunsch(sequence_a, sequence_b, score_matrix):
@@ -66,11 +71,11 @@ def needleman_wunsch(sequence_a, sequence_b, score_matrix):
 
     alignment_matrix[0, 0] = 0
     for i in range(1, len(sequence_a)):
-        cost = gap_cost(affine_x_matrix, i - 1, 0, UP, gap_penalty, gap_delta_penalty)
+        cost = gap_cost(alignment_matrix, affine_x_matrix, i - 1, 0, UP, gap_penalty, gap_delta_penalty)
         alignment_matrix[i, 0] = cost
         affine_x_matrix[i, 0] = cost
     for j in range(1, len(sequence_b)):
-        cost = gap_cost(affine_y_matrix, 0, j - 1, LEFT, gap_penalty, gap_delta_penalty)
+        cost = gap_cost(alignment_matrix, affine_y_matrix, 0, j - 1, LEFT, gap_penalty, gap_delta_penalty)
         alignment_matrix[0, j] = cost
         affine_y_matrix[0, j] = cost
 
@@ -81,9 +86,9 @@ def needleman_wunsch(sequence_a, sequence_b, score_matrix):
             score = score_matrix[(a, b)] if (a, b) in score_matrix else score_matrix[(b, a)]
             match = alignment_matrix[i-1, j-1] + score
             #delete = alignment_matrix[i-1, j] + gap_penalty
-            delete = gap_cost(affine_x_matrix, i-1, j, UP, gap_penalty, gap_delta_penalty)
+            delete = gap_cost(alignment_matrix, affine_x_matrix, i-1, j, UP, gap_penalty, gap_delta_penalty)
             #insert = alignment_matrix[i, j-1] + gap_penalty
-            insert = gap_cost(affine_y_matrix, i, j-1, LEFT, gap_penalty, gap_delta_penalty)
+            insert = gap_cost(alignment_matrix, affine_y_matrix, i, j-1, LEFT, gap_penalty, gap_delta_penalty)
             best_score = max(match, delete, insert)
             path = 0
             if best_score == match:
