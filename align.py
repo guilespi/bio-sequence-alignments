@@ -50,9 +50,12 @@ def gap_cost(cost_matrix, matrix, x, y, direction, opening_cost, delta_cost):
         else:
             oy -= 1
     if cost == 0:
+        #if a new opening is needed, consider previous cell value
         return cost_matrix[x, y] + opening_cost
     else:
-        return cost + opening_cost
+        #if I have a current opening recalculate the complete cost
+        #original cell value + opening + each added gap
+        return cost_matrix[ox, oy] + cost + opening_cost
 
 #Needleman wunsch for two sequences a and b
 def needleman_wunsch(sequence_a, sequence_b, score_matrix):
@@ -85,9 +88,7 @@ def needleman_wunsch(sequence_a, sequence_b, score_matrix):
             b=sequence_b[j]
             score = score_matrix[(a, b)] if (a, b) in score_matrix else score_matrix[(b, a)]
             match = alignment_matrix[i-1, j-1] + score
-            #delete = alignment_matrix[i-1, j] + gap_penalty
             delete = gap_cost(alignment_matrix, affine_x_matrix, i-1, j, UP, gap_penalty, gap_delta_penalty)
-            #insert = alignment_matrix[i, j-1] + gap_penalty
             insert = gap_cost(alignment_matrix, affine_y_matrix, i, j-1, LEFT, gap_penalty, gap_delta_penalty)
             best_score = max(match, delete, insert)
             path = 0
